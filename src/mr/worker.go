@@ -285,7 +285,7 @@ func Worker(mapf func(string, string) []KeyValue,
 		// check heartbeat every 5 seconds
 		if current_time.Sub(prev_heartbeat) > 5*time.Second {
 			res_heartbeat := call("Coordinator.HeartBeat", &config.WorkerID, &response_heartbeat, config.CoordAddr)
-			if res_heartbeat {
+			if !res_heartbeat {
 				log.Fatal("Coordinator is down")
 			} else {
 				prev_heartbeat = current_time
