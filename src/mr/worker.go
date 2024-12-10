@@ -111,6 +111,7 @@ func (ws *WorkerServer) IntermediateFilesRequest(bucket *int, respsonse *[]strin
 	pattern := "mr-" + strconv.Itoa(*bucket) + "*"
 	files, err := filepath.Glob(pattern)
 
+	log.Print("Intermediate Request for " + pattern)
 	if err != nil {
 		log.Printf("Error finding files: %v", err)
 	}
@@ -306,7 +307,7 @@ func Worker(mapf func(string, string) []KeyValue,
 			break
 		}
 
-		//log.Print(response)
+		log.Print(response)
 		switch response.Status {
 		case EXIT:
 			os.Exit(0)
