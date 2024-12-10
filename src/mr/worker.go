@@ -287,8 +287,9 @@ func Worker(mapf func(string, string) []KeyValue,
 			res_heartbeat := call("Coordinator.HeartBeat", &config.WorkerID, &response_heartbeat, config.CoordAddr)
 			if res_heartbeat {
 				log.Fatal("Coordinator is down")
+			} else {
+				prev_heartbeat = current_time
 			}
-			prev_heartbeat = current_time
 		}
 
 		request := TaskRequest{
