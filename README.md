@@ -21,3 +21,28 @@ For crashes on reducing stage, we use a passive style to handle them. If a worke
 ### Coordinator Failure
 
 Workers will periodically send heartbeat message to the Coordinator. If the worker fails to connect the Coordinator, then it detects Coordinator failure and exits.
+
+### Test on AWS
+
+``` shell
+# to prepare the server
+rm MapReduce/ -rf
+
+sudo apt update 
+sudo apt install -y docker git golang
+
+git clone https://github.com/nowhere-x/MapReduce.git
+
+cd MapReduce/src/main
+go build -race -buildmode=plugin ../mrapps/wc.go
+
+rm tmp/ -rf
+mkdir tmp/ 
+cp config.json ./tmp/
+
+# coordinator
+go run -race ./mrcoordinator.go --port=80   ./pg-*
+# worker (modify config.json first)
+cd tmp/
+go run -race ../mrworker.go ../wc.so
+```

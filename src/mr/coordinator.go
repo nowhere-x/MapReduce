@@ -99,12 +99,16 @@ func (c *Coordinator) CompleteTask(request *TaskRequest, response *TaskResponse)
 			c.MapTasks[request.TaskID].Status = FINISHED
 			c.MapRemaining--
 			c.MapRunning--
+
+			log.Printf("Map Task %d finished", request.TaskID)
 		}
 	case REDUCE:
 		{
 			c.ReduceTasks[request.TaskID].Status = FINISHED
 			c.ReduceRemaining--
 			c.ReduceRunning--
+
+			log.Printf("Reduce Task %d finished", request.TaskID)
 		}
 	}
 
@@ -133,7 +137,6 @@ func (c *Coordinator) RequestTask(request *TaskRequest, response *TaskResponse) 
 	} else if c.MapRemaining > 0 { // no map task to assign, still running
 		response.Status = WAIT
 	} else if (c.ReduceRemaining - c.ReduceRunning) > 0 {
-		// log.Print(c.ReduceRemaining, c.ReduceRunning)
 
 		for i := 0; i < len(c.ReduceTasks); i++ { // assign a new reduce task
 			if c.ReduceTasks[i].Status == UNASSIGNED {
@@ -156,6 +159,8 @@ func (c *Coordinator) RequestTask(request *TaskRequest, response *TaskResponse) 
 	} else {
 		response.Status = EXIT
 	}
+
+	log.Printf("Response worker %s %d", request.WorkerID, response.Status)
 	return nil
 }
 
@@ -179,6 +184,41 @@ func (c *Coordinator) ResetDeadTasks() {
 		if status == (*task)[i].Status && endtime.Sub((*task)[i].TimeStamp) > c.TimeOut {
 			(*task)[i].Status = UNASSIGNED
 			(*running)--
+
+			if status == MAP_IN_PROGRESS {
+				log.Printf("Map Task %d is reset", i)
+			} else {
+				log.Printf("Reduce Task %d is reset", i)
+			}
+
+		}
+	}
+}
+
+func (c *Coordinator) ResetCrashedTasks(worker_id string) {
+	// reset all map tasks completed by this worker
+	if c.MapRemaining < len(c.MapTasks) {
+		for i := 0; i < len(c.MapTasks); i++ {
+			if worker_id == c.MapTasks[i].WorkerID {
+				if c.MapTasks[i].Status == MAP_IN_PROGRESS {
+					c.MapRunning--
+				}
+				c.MapTasks[i].Status = UNASSIGNED
+				c.MapRemaining++
+			}
+		}
+	}
+
+	// reset all reduce tasks completed by this worker
+	if c.ReduceRemaining < len(c.ReduceTasks) {
+		for i := 0; i < len(c.ReduceTasks); i++ {
+			if worker_id == c.ReduceTasks[i].WorkerID {
+				if c.ReduceTasks[i].Status == REDUCE_IN_PROGRESS {
+					c.ReduceRunning--
+				}
+				c.ReduceTasks[i].Status = UNASSIGNED
+				c.ReduceRemaining++
+			}
 		}
 	}
 }
@@ -189,6 +229,9 @@ func (c *Coordinator) ResetDeadWorkers() {
 		if endtime.Sub(value.TimeStamp) > c.TimeOut {
 			value.Status = EXIT
 			c.Workers[key] = value
+
+			c.ResetCrashedTasks(key)
+			log.Printf("Worker %s is crahsed", key)
 		}
 	}
 }
@@ -210,6 +253,10 @@ func (c *Coordinator) IntermediateAddr() []string {
 	var addrs []string
 	addr_map := map[string]string{}
 	for i := 0; i < len(c.MapTasks); i++ {
+
+		if c.MapTasks[i].Status != FINISHED {
+			return addrs
+		}
 		id := c.MapTasks[i].WorkerID
 		_, ok := addr_map[id]
 		if !ok {

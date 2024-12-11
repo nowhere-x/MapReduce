@@ -53,11 +53,11 @@ type WorkerServer struct {
 func log_message(msg string, level int) {
 	switch level {
 	case INFO:
-		log.Println("INFO", msg)
+		log.Printf("INFO: %s", msg)
 	case WARNING:
-		log.Println("WARNING: ", msg)
+		log.Printf("WARNING: %s", msg)
 	case FATAL:
-		log.Println("FATAL: ", msg)
+		log.Printf("FATAL: %s", msg)
 	}
 }
 
@@ -74,10 +74,10 @@ func ihash(key string) int {
 // returns false if something goes wrong.
 func call(rpcname string, args interface{}, reply interface{}, addr string) bool {
 	c, err := rpc.DialHTTP("tcp", addr)
-	// sockname := coordinatorSock()
-	// c, err := rpc.DialHTTP("unix", sockname)
+
 	if err != nil {
-		log.Fatal("dialing:", err)
+		log.Printf("dialing: %v", err)
+		return false
 	}
 	defer c.Close()
 
@@ -95,9 +95,7 @@ func (ws *WorkerServer) server() {
 	rpc.Register(ws)
 	rpc.HandleHTTP()
 	l, e := net.Listen("tcp", config.WorkerAddr)
-	// sockname := coordinatorSock()
-	// os.Remove(sockname)
-	// l, e := net.Listen("unix", sockname)
+
 	if e != nil {
 		log.Fatal("listen error:", e)
 	}
@@ -111,7 +109,7 @@ func (ws *WorkerServer) IntermediateFilesRequest(bucket *int, respsonse *[]strin
 	pattern := "mr-" + strconv.Itoa(*bucket) + "*"
 	files, err := filepath.Glob(pattern)
 
-	log.Print("Intermediate Request for " + pattern)
+	log.Printf("Intermediate Request for %s", pattern)
 	if err != nil {
 		log.Printf("Error finding files: %v", err)
 	}
@@ -139,19 +137,7 @@ func (ws *WorkerServer) IntermediateFilesRequest(bucket *int, respsonse *[]strin
 }
 
 func map_task(response *TaskResponse, mapf func(string, string) []KeyValue) {
-	// read target file(input)
 
-	// file_name := response.TargetFiles[0]
-	// file, err := os.Open(file_name)
-	// if err != nil {
-	// 	log_message("Missing File "+file_name, FATAL)
-	// }
-
-	// content, err := io.ReadAll(file)
-	// if err != nil {
-	// 	log_message(file_name+" read failed", WARNING)
-	// }
-	// file.Close()
 	file_name := response.TargetFiles[0]
 	content := response.TargetFiles[1]
 
@@ -197,17 +183,7 @@ func reduce_task(response *TaskResponse, reducef func(string, []string) string) 
 	// Load intermediate files
 	intermediate := []KeyValue{}
 	for i := 0; i < len(response.TargetFiles); i++ {
-		// file, err := os.Open(response.TargetFiles[i])
-		// if err != nil {
-		// 	log.Printf("cannot open %v", response.TargetFiles[i])
-		// 	continue
-		// }
-		// decoder := json.NewDecoder(file)
 
-		// var bucket_list []KeyValue
-		// decoder.Decode(&bucket_list)
-		// intermediate = append(intermediate, bucket_list...)
-		// file.Close()
 		var worker_intermediate []string
 		res := call("WorkerServer.IntermediateFilesRequest", &response.TaskID, &worker_intermediate, response.TargetFiles[i])
 		if !res {
@@ -304,10 +280,13 @@ func Worker(mapf func(string, string) []KeyValue,
 
 		res := call("Coordinator.RequestTask", &request, &response, config.CoordAddr)
 		if !res {
-			break
+			log.Fatal("Coordinator is down")
 		}
 
-		log.Print(response)
+		// worker log assigned task,
+		// note: except MAP_IN_PROGRESS(1) and REDUCE_IN_PROGRESS(2), the TaskID in other message is meaningless
+		log.Printf("Coordinator reply Status %d, TaskID %d", response.Status, response.TaskID)
+
 		switch response.Status {
 		case EXIT:
 			os.Exit(0)
@@ -320,6 +299,6 @@ func Worker(mapf func(string, string) []KeyValue,
 		default:
 			time.Sleep(1 * time.Second)
 		}
-		time.Sleep(3 * time.Second)
+		time.Sleep(1 * time.Second)
 	}
 }
