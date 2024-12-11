@@ -188,12 +188,12 @@ func reduce_task(response *TaskResponse, reducef func(string, []string) string) 
 		res := call("WorkerServer.IntermediateFilesRequest", &response.TaskID, &worker_intermediate, response.TargetFiles[i+1])
 		if !res {
 			// notify coordinator if worker with intermediate files crashes
-			// notify_request := TaskRequest{
-			// 	TaskID:   response.TaskID,
-			// 	WorkerID: response.TargetFiles[i],
-			// }
-			// var temp int
-			// call("Coordinator.CrashNofity", &notify_request, &temp, config.CoordAddr)
+			notify_request := TaskRequest{
+				TaskID:   response.TaskID,
+				WorkerID: response.TargetFiles[i],
+			}
+			var temp int
+			call("Coordinator.CrashNofity", &notify_request, &temp, config.CoordAddr)
 			return
 		}
 		for _, file := range worker_intermediate {
