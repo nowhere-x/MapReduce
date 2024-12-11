@@ -160,7 +160,7 @@ func (c *Coordinator) RequestTask(request *TaskRequest, response *TaskResponse) 
 		response.Status = EXIT
 	}
 
-	log.Printf("Response worker %s %d", request.WorkerID, response.Status)
+	log.Printf("Response worker %s %d %d", request.WorkerID, response.Status, response.TaskID)
 	return nil
 }
 
@@ -226,7 +226,7 @@ func (c *Coordinator) ResetCrashedTasks(worker_id string) {
 func (c *Coordinator) ResetDeadWorkers() {
 	endtime := time.Now()
 	for key, value := range c.Workers {
-		if endtime.Sub(value.TimeStamp) > c.TimeOut {
+		if value.Status != EXIT && endtime.Sub(value.TimeStamp) > c.TimeOut {
 			value.Status = EXIT
 			c.Workers[key] = value
 

@@ -41,8 +41,13 @@ mkdir tmp/
 cp config.json ./tmp/
 
 # coordinator
-go run -race ./mrcoordinator.go --port=80   ./pg-*
+sudo go run -race ./mrcoordinator.go --port=80   ./pg-*
 # worker (modify config.json first)
 cd tmp/
-go run -race ../mrworker.go ../wc.so
+vim  config.json
+sudo go run -race ../mrworker.go ../wc.so
+# Re-run 
+rm mr* -f
+# modify
+git pull
 ```
