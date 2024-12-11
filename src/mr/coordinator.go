@@ -164,7 +164,7 @@ func (c *Coordinator) RequestTask(request *TaskRequest, response *TaskResponse) 
 	return nil
 }
 
-func (c *Coordinator) CrashNofity(request TaskRequest, response int) {
+func (c *Coordinator) CrashNofity(request *TaskRequest, response *int) error {
 	c.Mutex.Lock()
 	defer c.Mutex.Unlock()
 
@@ -175,13 +175,14 @@ func (c *Coordinator) CrashNofity(request TaskRequest, response int) {
 	}
 	c.ReduceTasks[unfinished_reduce_task_id].Status = UNASSIGNED
 
+	log.Printf("Worker %s is crahsed", crashed_id)
 	c.ResetCrashedTasks(crashed_id)
 	value, ok := c.Workers[crashed_id]
 	if ok {
 		value.Status = EXIT
 		c.Workers[crashed_id] = value
 	}
-	log.Printf("Worker %s is crahsed", crashed_id)
+	return nil
 }
 
 func (c *Coordinator) ResetDeadTasks() {
