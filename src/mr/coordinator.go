@@ -177,9 +177,10 @@ func (c *Coordinator) CrashNofity(request *TaskRequest, response *int) error {
 	c.ReduceTasks[unfinished_reduce_task_id].Status = UNASSIGNED
 
 	log.Printf("Worker %s is crahsed", crashed_id)
-	c.ResetCrashedTasks(crashed_id)
+
 	value, ok := c.Workers[crashed_id]
-	if ok {
+	if ok && value.Status != EXIT {
+		c.ResetCrashedTasks(crashed_id)
 		value.Status = EXIT
 		c.Workers[crashed_id] = value
 	}
@@ -221,7 +222,7 @@ func (c *Coordinator) ResetCrashedTasks(worker_id string) {
 	// reset all map tasks completed by this worker
 	if c.MapRemaining < len(c.MapTasks) {
 		for i := 0; i < len(c.MapTasks); i++ {
-			if worker_id == c.MapTasks[i].WorkerID {
+			if worker_id == c.MapTasks[i].WorkerID && c.MapTasks[i].Status != UNASSIGNED {
 				if c.MapTasks[i].Status == MAP_IN_PROGRESS && c.MapRunning > 0 {
 					c.MapRunning--
 				}
@@ -234,7 +235,7 @@ func (c *Coordinator) ResetCrashedTasks(worker_id string) {
 	// reset all reduce tasks completed by this worker
 	if c.ReduceRemaining < len(c.ReduceTasks) {
 		for i := 0; i < len(c.ReduceTasks); i++ {
-			if worker_id == c.ReduceTasks[i].WorkerID {
+			if worker_id == c.ReduceTasks[i].WorkerID && c.ReduceTasks[i].Status != UNASSIGNED {
 				if c.ReduceTasks[i].Status == REDUCE_IN_PROGRESS && c.ReduceRunning > 0 {
 					c.ReduceRunning--
 				}
