@@ -160,7 +160,7 @@ func (c *Coordinator) RequestTask(request *TaskRequest, response *TaskResponse) 
 		response.Status = EXIT
 	}
 
-	fmt.Print(c.MapRemaining, c.MapRunning, c.ReduceRemaining, c.ReduceRunning)
+	fmt.Println(c.MapRemaining, c.MapRunning, c.ReduceRemaining, c.ReduceRunning)
 	log.Printf("Response worker %s %d %d", request.WorkerID, response.Status, response.TaskID)
 	return nil
 }
@@ -226,8 +226,10 @@ func (c *Coordinator) ResetCrashedTasks(worker_id string) {
 				if c.MapTasks[i].Status == MAP_IN_PROGRESS && c.MapRunning > 0 {
 					c.MapRunning--
 				}
+				if c.MapTasks[i].Status == FINISHED {
+					c.MapRemaining++
+				}
 				c.MapTasks[i].Status = UNASSIGNED
-				c.MapRemaining++
 			}
 		}
 	}
@@ -239,8 +241,10 @@ func (c *Coordinator) ResetCrashedTasks(worker_id string) {
 				if c.ReduceTasks[i].Status == REDUCE_IN_PROGRESS && c.ReduceRunning > 0 {
 					c.ReduceRunning--
 				}
+				if c.ReduceTasks[i].Status == FINISHED {
+					c.ReduceRemaining++
+				}
 				c.ReduceTasks[i].Status = UNASSIGNED
-				c.ReduceRemaining++
 			}
 		}
 	}
