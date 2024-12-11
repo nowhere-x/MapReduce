@@ -164,6 +164,26 @@ func (c *Coordinator) RequestTask(request *TaskRequest, response *TaskResponse) 
 	return nil
 }
 
+func (c *Coordinator) CrashNofity(request TaskRequest, response int) {
+	c.Mutex.Lock()
+	defer c.Mutex.Unlock()
+
+	crashed_id := request.WorkerID
+	unfinished_reduce_task_id := request.TaskID
+	if c.ReduceTasks[unfinished_reduce_task_id].Status == REDUCE_IN_PROGRESS {
+		c.ReduceRunning--
+	}
+	c.ReduceTasks[unfinished_reduce_task_id].Status = UNASSIGNED
+
+	c.ResetCrashedTasks(crashed_id)
+	value, ok := c.Workers[crashed_id]
+	if ok {
+		value.Status = EXIT
+		c.Workers[crashed_id] = value
+	}
+	log.Printf("Worker %s is crahsed", crashed_id)
+}
+
 func (c *Coordinator) ResetDeadTasks() {
 	var task *[]TaskResponse
 	var status int
@@ -270,7 +290,8 @@ func (c *Coordinator) IntermediateAddr() []string {
 			}
 		}
 	}
-	for _, v := range addr_map {
+	for k, v := range addr_map {
+		addrs = append(addrs, k)
 		addrs = append(addrs, v)
 	}
 	return addrs

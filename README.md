@@ -41,7 +41,7 @@ mkdir tmp/
 cp config.json ./tmp/
 
 # coordinator
-sudo go run -race ./mrcoordinator.go --port=80   ./pg-*
+sudo go run -race ./mrcoordinator.go --port=80 ./pg-*
 # worker (modify config.json first)
 cd tmp/
 vim  config.json
