@@ -160,6 +160,7 @@ func (c *Coordinator) RequestTask(request *TaskRequest, response *TaskResponse) 
 		response.Status = EXIT
 	}
 
+	fmt.Print(c.MapRemaining, c.MapRunning)
 	log.Printf("Response worker %s %d %d", request.WorkerID, response.Status, response.TaskID)
 	return nil
 }
